@@ -11,7 +11,7 @@ Each entry: **Context → Decision → Consequences.** Status is `Accepted`, `Pr
 **Consequences:** Reliable wheels and the same version locally, in CI and in containers. We don't get 3.13/3.14 language features, which this project doesn't need.
 
 ## ADR-002 — fastembed (ONNX) for local embeddings and reranking
-**Status:** Proposed · Phase 0 (library choice). The *model* choice is a separate 🔶 decision in Phase 2.
+**Status:** Accepted 2026-11-22 · Phase 0 (library choice). The *model* choice is a separate 🔶 decision in Phase 2.
 **Context:** The spec allows `fastembed` or `sentence-transformers`. sentence-transformers depends on PyTorch, which adds ~1–2 GB to every image and a slow install. fastembed runs ONNX models on CPU, supports `query_embed` vs `embed` (the correct BGE query/passage handling), and also ships cross-encoder rerankers.
 **Decision:** Use fastembed for both the embedder and the reranker.
 **Alternatives:** sentence-transformers (largest model catalogue, heavier); a hosted embedding API (rejected: costs money, needs a key, not offline).
@@ -42,13 +42,14 @@ Each entry: **Context → Decision → Consequences.** Status is `Accepted`, `Pr
 **Consequences:** Reviewers need pnpm (`corepack enable` gives it with Node). Documented in the README.
 
 ## ADR-007 — Running the Makefile on Windows
-**Status:** Proposed. **Needs your choice** · Phase 0
+**Status:** Accepted 2026-11-22: option 1 · Phase 0
 **Context:** The spec requires a Makefile. GNU make isn't installed. CI (Linux) has make.
 **Options:**
 1. **Install GNU make** (`winget install ezwinports.make`) and run targets from Git Bash. *(Recommended: keeps the spec's Makefile as the single source of truth.)*
 2. Develop inside **WSL2**, where make, uv and Docker all work natively, and the environment matches CI most closely. More setup, better long-term.
 3. Replace make with a cross-platform runner (`just`/Taskfile). This changes the spec, and reviewers on Linux/macOS expect make.
-**Consequences:** Pending.
+**Decision:** Option 1. GNU make 4.4.1 installed via `winget install ezwinports.make`.
+**Consequences:** Makefile recipes must run under Git Bash (POSIX shell) on Windows and under bash in CI, so no PowerShell-only syntax goes in recipes.
 
 ## ADR-008 — Force LF line endings via `.gitattributes`
 **Status:** Accepted · Phase 0

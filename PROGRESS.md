@@ -31,12 +31,10 @@ _Last updated: 2026-11-22_
 2. **`gh` hangs** even on `gh --version`. Not blocking (plain `git` works), but the user should check `gh auth status`.
 3. ~~Docker daemon not responding~~ **Resolved 2026-11-22:** daemon 29.7.2 responds. The Docker VM has 4 CPUs and ~3.8 GB RAM (tight for large models, see PLAN risk 5). A native Windows Postgres holds host port 5432, so compose Postgres uses **5433** (ADR-010). Another project's Supabase containers use 54321/54322 (no clash).
 4. **`uv` not installed.** `winget install astral-sh.uv`
-5. **`make` not installed.** See ADR-007 (choice pending).
+5. ~~`make` not installed~~ **Resolved 2026-11-22:** GNU make 4.4.1 via winget (ADR-007). Shells opened before the install need a restart to see it on PATH.
 
 ## Pending decisions
-- ADR-002 (fastembed) proposed, awaiting OK
-- ADR-007 (make on Windows) needs a choice
-- Root `SafeOps_Master_Prompt.md` duplicates `docs/MASTER_PROMPT.md`. It was left untracked (not committed) until the user decides whether to delete it
+- None. ADR-002 (fastembed) and ADR-007 (GNU make via winget) were accepted 2026-11-22. The root spec duplicate was deleted; `docs/MASTER_PROMPT.md` is the only copy.
 
 ## Known issues
 - None in code yet.
