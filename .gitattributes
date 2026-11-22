@@ -1,0 +1,15 @@
+# Normalise line endings to LF in the repo. Windows checkouts with CRLF break
+# shell scripts inside Linux containers and Makefile recipes.
+* text=auto eol=lf
+
+*.bat  text eol=crlf
+*.ps1  text eol=crlf
+
+# Binary formats (synthetic PDFs/DOCX are committed test data)
+*.pdf  binary
+*.docx binary
+*.png  binary
+*.jpg  binary
+*.gif  binary
+*.ico  binary
+*.onnx binary
