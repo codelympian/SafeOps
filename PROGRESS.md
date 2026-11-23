@@ -3,13 +3,13 @@
 _Last updated: 2026-11-24_
 
 ## Current phase
-**Phase 1: Foundation.** Report delivered, **awaiting approval**. Local commits are not pushed yet (they're pushed on approval).
+**Phase 1 complete** (approved 2026-11-24). Next: **Phase 2, Synthetic data and ingestion**. It opens with the 🔶 embedding model decision.
 
 ## Phase status
 | Phase | Status |
 |---|---|
 | 0 Inspect & plan | ✅ Approved 2026-11-22 (commit 492019c, pushed) |
-| 1 Foundation | Report delivered, awaiting approval |
+| 1 Foundation | ✅ Approved 2026-11-24 |
 | 2 Synthetic data & ingestion | Not started. Starts with 🔶 embedding model decision, then 🔶 ERD sign-off |
 | 3 Retrieval & eval harness | Not started |
 | 4 HSE Assistant | Not started |
