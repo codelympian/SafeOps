@@ -1,0 +1,70 @@
+# Local stack: Postgres (pgvector) + Redis + API + worker.
+# The Next.js frontend runs on the host (`make dev`) for fast reloads (ADR-016).
+
+name: safeops
+
+x-backend: &backend
+  build: ./backend
+  env_file: .env
+  environment:
+    # Inside the compose network, services reach each other by name on default ports.
+    DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    REDIS_URL: redis://redis:6379/0
+    HF_HOME: /models/huggingface
+    FASTEMBED_CACHE_PATH: /models/fastembed
+    WATCHFILES_FORCE_POLLING: "true"  # file events don't cross Windows bind mounts
+  volumes:
+    - ./backend/app:/app/app
+    - ./backend/alembic:/app/alembic
+    - model-cache:/models
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"   # 5433 on the host: 5432 is taken locally (ADR-010)
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # -h localhost checks TCP. During first-run init the temporary server listens on
+      # the unix socket only, so this stays unhealthy until the real server is up.
+      test: ["CMD-SHELL", "pg_isready -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    <<: *backend
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir app"
+    ports:
+      - "8000:8000"
+
+  worker:
+    <<: *backend
+    command: arq app.worker.settings.WorkerSettings --watch app
+
+volumes:
+  pgdata:
+  model-cache:   # shared by api + worker so models download once (Phase 2)
