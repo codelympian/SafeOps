@@ -33,6 +33,7 @@ SafeOps/
 ├── README.md                  (Phase 9: results table, quickstart)
 ├── Makefile                   dev, test, seed, download-models, eval, eval-fast, e2e, lint, reembed
 ├── docker-compose.yml         postgres(pgvector), redis, api, worker, model-cache volume
+├── infra/postgres/init/       first-run SQL (creates the safeops_test database)
 ├── .env.example  .gitignore  .gitattributes
 ├── .github/workflows/ci.yml   lint, type-check, tests, eval-fast
 │
