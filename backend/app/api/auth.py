@@ -20,6 +20,7 @@ from app.db.repositories.users import find_user_by_email_for_login
 from app.db.session import get_session
 from app.logging_config import get_logger
 from app.schemas.auth import LoginRequest, OrgOut, RegisterRequest, SessionOut, UserOut
+from app.schemas.errors import error_responses
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 _log = get_logger(__name__)
@@ -50,7 +51,12 @@ def _start_session(
     )
 
 
-@router.post("/register", response_model=SessionOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    response_model=SessionOut,
+    status_code=status.HTTP_201_CREATED,
+    responses=error_responses(409),
+)
 async def register(
     body: RegisterRequest,
     response: Response,
@@ -78,7 +84,7 @@ async def register(
     return _start_session(response, user, org, settings)
 
 
-@router.post("/login", response_model=SessionOut)
+@router.post("/login", response_model=SessionOut, responses=error_responses(401))
 async def login(
     body: LoginRequest,
     response: Response,
@@ -99,7 +105,7 @@ async def login(
     return _start_session(response, user, org, settings)
 
 
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT, responses=error_responses(401, 403))
 async def logout(
     response: Response,
     auth: AuthState = Depends(get_auth),
@@ -117,7 +123,7 @@ async def logout(
     return response
 
 
-@router.get("/me", response_model=SessionOut)
+@router.get("/me", response_model=SessionOut, responses=error_responses(401))
 async def me(auth: AuthState = Depends(get_auth)) -> SessionOut:
     return SessionOut(
         user=UserOut.model_validate(auth.user),

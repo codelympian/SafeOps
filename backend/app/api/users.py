@@ -13,8 +13,9 @@ from app.db.repositories.users import UserRepository
 from app.db.session import get_session
 from app.logging_config import get_logger
 from app.schemas.auth import CreateUserRequest, UserOut
+from app.schemas.errors import error_responses
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter(prefix="/users", tags=["users"], responses=error_responses(401, 403))
 _log = get_logger(__name__)
 admin_only = require_roles(Role.ADMIN)
 
@@ -28,7 +29,7 @@ async def list_users(
     return [UserOut.model_validate(user) for user in users]
 
 
-@router.get("/{user_id}", response_model=UserOut)
+@router.get("/{user_id}", response_model=UserOut, responses=error_responses(404))
 async def get_user(
     user_id: uuid.UUID,
     ctx: OrgContext = Depends(admin_only),
@@ -42,7 +43,9 @@ async def get_user(
     return UserOut.model_validate(user)
 
 
-@router.post("", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", response_model=UserOut, status_code=status.HTTP_201_CREATED, responses=error_responses(409)
+)
 async def create_user(
     body: CreateUserRequest,
     ctx: OrgContext = Depends(admin_only),
