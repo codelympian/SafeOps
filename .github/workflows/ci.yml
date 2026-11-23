@@ -1,0 +1,121 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (lint, types, tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: safeops
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: safeops_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -h localhost -U safeops -d safeops_test"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgresql+asyncpg://safeops:ci-only-password@localhost:5432/safeops_test
+      REDIS_URL: redis://localhost:6379/0
+      LLM_PROVIDER: mock
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.13.9"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Ruff (lint + format check)
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Mypy (strict)
+        run: uv run mypy app tests
+
+      - name: Migrations match models
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+        run: |
+          uv run alembic upgrade head
+          uv run alembic check
+
+      - name: Tests
+        run: uv run pytest
+
+      - name: OpenAPI spec is up to date with the frontend copy
+        run: |
+          uv run python -m app.export_openapi > ../frontend/openapi.json
+          git diff --exit-code -- ../frontend/openapi.json || {
+            echo "::error::frontend/openapi.json is stale. Run 'make api-types' and commit the result."
+            exit 1
+          }
+
+  frontend:
+    name: Frontend (lint, types, tests, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generated API types match openapi.json
+        run: |
+          pnpm api-types
+          git diff --exit-code -- src/lib/api/schema.d.ts || {
+            echo "::error::schema.d.ts is stale. Run 'make api-types' and commit the result."
+            exit 1
+          }
+
+      - name: ESLint
+        run: pnpm lint
+
+      - name: TypeScript (strict)
+        run: pnpm typecheck
+
+      - name: Unit and component tests
+        run: pnpm test
+
+      - name: Production build
+        run: pnpm build

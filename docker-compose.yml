@@ -60,6 +60,13 @@ services:
              uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir app"
     ports:
       - "8000:8000"
+    healthcheck:
+      # The slim image has no curl, so use Python's stdlib. Fails unless /health returns 200.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
 
   worker:
     <<: *backend
