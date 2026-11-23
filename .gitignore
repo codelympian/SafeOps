@@ -39,13 +39,16 @@ frontend/blob-report/
 frontend/coverage/
 
 # ---------- Model caches (downloaded weights are never committed) ----------
-.cache/
-models/
+# Anchored with a leading "/" on purpose: a bare "models/" also matched the source
+# package backend/app/db/models/ and silently kept it out of Git (fixed in Phase 1).
+/.cache/
+/backend/.cache/
+/models/
+/backend/models/
 .hf_cache/
 hf_cache/
 .fastembed_cache/
 fastembed_cache/
-local_cache/
 
 # ---------- Local storage: uploaded files, Docker volume data, DB dumps ----------
 storage/
